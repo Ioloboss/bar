@@ -8,7 +8,17 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include "xdg-shell-client-protocol.h"
+
 #define BAR_IMAGE_SHEET_LOCATION "/home/harrison/documents/programs/bar/barImageSheet.rgb"
+
+#define TRANSPARENT_COLOR_R (char) 0xf2
+#define TRANSPARENT_COLOR_G (char) 0x00
+#define TRANSPARENT_COLOR_B (char) 0xff
+
+#define BATTERY_FOREGROUND_R (char) 0x6f
+#define BATTERY_FOREGROUND_G (char) 0x5b
+#define BATTERY_FOREGROUND_B (char) 0x41
+
 //#define debug
 
 struct wl_compositor* comp;
@@ -26,6 +36,7 @@ int BIH = 96;
 char* barImages;
 void copyImage (int sheetX, int sheetY, int barX);
 void writeNumber (int number, int barX);
+void copyImageTransparent (int sheetX, int sheetY, int barX);
 char* time;
 
 
@@ -77,6 +88,72 @@ int getActiveWorkspace() {
 	return value;
 }
 
+int getBatteryLevel() {
+	char bashCommand[256] = "cat /sys/class/power_supply/BAT0/capacity";
+	char bashOutputBuffer[1000];
+	FILE *pipe;
+	int len;
+
+	pipe = popen(bashCommand, "r");
+
+	if (!pipe) {
+		perror("pipe");
+		exit(1);
+	}
+
+	fgets(bashOutputBuffer, sizeof(bashOutputBuffer), pipe);
+
+	len = strlen(bashOutputBuffer);
+	bashOutputBuffer[len-1] = '\0';
+	pclose(pipe);
+	int value = atoi(bashOutputBuffer);
+	return value;
+}
+
+char getBatteryStatus() {
+	char bashCommand[256] = "cat /sys/class/power_supply/BAT0/status";
+	char bashOutputBuffer[1000];
+	FILE *pipe;
+	int len;
+
+	pipe = popen(bashCommand, "r");
+
+	if (!pipe) {
+		perror("pipe");
+		exit(1);
+	}
+
+	fgets(bashOutputBuffer, sizeof(bashOutputBuffer), pipe);
+
+	len = strlen(bashOutputBuffer);
+	bashOutputBuffer[len-1] = '\0';
+	pclose(pipe);
+	int value = bashOutputBuffer[0];
+	return value;
+}
+
+char getNetworkStatus() {
+	char bashCommand[256] = "cat /sys/class/net/wlp1s0/operstate";
+	char bashOutputBuffer[1000];
+	FILE *pipe;
+	int len;
+
+	pipe = popen(bashCommand, "r");
+
+	if (!pipe) {
+		perror("pipe");
+		exit(1);
+	}
+
+	fgets(bashOutputBuffer, sizeof(bashOutputBuffer), pipe);
+
+	len = strlen(bashOutputBuffer);
+	bashOutputBuffer[len-1] = '\0';
+	pclose(pipe);
+	int value = bashOutputBuffer[0];
+	return value;
+}
+
 void updateTime(char* time) {
 	char bashCommand[256] = "date '+%H%M'";
 	char bashOutputBuffer[1000];
@@ -102,6 +179,20 @@ void updateTime(char* time) {
 	return;
 }
 
+void drawBatteryForeground(int batteryLevel) {
+	int adjustedBatteryLevel = (batteryLevel * 16) / 100;
+	int beginningX = 2776;
+	int beginningY = 20 - adjustedBatteryLevel;
+	for (int x = 0; x < 24; x++) {
+		for (int y = beginningY; y < 20; y++) {
+			pixl[(((y * w) + (beginningX + x)) * 4) + 0] = BATTERY_FOREGROUND_B;
+			pixl[(((y * w) + (beginningX + x)) * 4) + 1] = BATTERY_FOREGROUND_G;
+			pixl[(((y * w) + (beginningX + x)) * 4) + 2] = BATTERY_FOREGROUND_R;
+			pixl[(((y * w) + (beginningX + x)) * 4) + 3] = 0xff;
+		}
+	}
+}
+
 void draw() {
 	#ifdef debug
 	printf("Draw Called\n");
@@ -118,41 +209,41 @@ void draw() {
 	printf("Active Workspace is %d\n", activeworkspace);
 	#endif
 	if (activeworkspace == 1)
-		copyImage(1, 1, (24 * 1) + 10);
+		copyImage(1, 1, (24 * 1) + 20);
 	else
-    		copyImage(1, 0, (24 * 1) + 10);
+    		copyImage(1, 0, (24 * 1) + 20);
 	if (activeworkspace == 2)
-		copyImage(2, 1, (24 * 2) + 10);
+		copyImage(2, 1, (24 * 2) + 20);
 	else
-    		copyImage(2, 0, (24 * 2) + 10);
+    		copyImage(2, 0, (24 * 2) + 20);
 	if (activeworkspace == 3)
-		copyImage(3, 1, (24 * 3) + 10);
+		copyImage(3, 1, (24 * 3) + 20);
 	else
-    		copyImage(3, 0, (24 * 3) + 10);
+    		copyImage(3, 0, (24 * 3) + 20);
 	if (activeworkspace == 4)
-		copyImage(4, 1, (24 * 4) + 10);
+		copyImage(4, 1, (24 * 4) + 20);
 	else
-    		copyImage(4, 0, (24 * 4) + 10);
+    		copyImage(4, 0, (24 * 4) + 20);
 	if (activeworkspace == 5)
-		copyImage(5, 1, (24 * 5) + 10);
+		copyImage(5, 1, (24 * 5) + 20);
 	else
-    		copyImage(5, 0, (24 * 5) + 10);
+    		copyImage(5, 0, (24 * 5) + 20);
 	if (activeworkspace == 6)
-		copyImage(6, 1, (24 * 6) + 10);
+		copyImage(6, 1, (24 * 6) + 20);
 	else
-    		copyImage(6, 0, (24 * 6) + 10);
+    		copyImage(6, 0, (24 * 6) + 20);
 	if (activeworkspace == 7)
-		copyImage(7, 1, (24 * 7) + 10);
+		copyImage(7, 1, (24 * 7) + 20);
 	else
-    		copyImage(7, 0, (24 * 7) + 10);
+    		copyImage(7, 0, (24 * 7) + 20);
 	if (activeworkspace == 8)
-		copyImage(8, 1, (24 * 8) + 10);
+		copyImage(8, 1, (24 * 8) + 20);
 	else
-    		copyImage(8, 0, (24 * 8) + 10);
+    		copyImage(8, 0, (24 * 8) + 20);
 	if (activeworkspace == 9)
-		copyImage(9, 1, (24 * 9) + 10);
+		copyImage(9, 1, (24 * 9) + 20);
 	else
-    		copyImage(9, 0, (24 * 9) + 10);
+    		copyImage(9, 0, (24 * 9) + 20);
 
 	updateTime(time);
 
@@ -161,6 +252,29 @@ void draw() {
 	writeNumber(-2, 2834);
 	writeNumber(time[2] - '0', 2846);
 	writeNumber(time[3] - '0', 2858);
+
+	int batteryLevel = getBatteryLevel();
+	char batteryStatus = getBatteryStatus();
+
+	drawBatteryForeground(batteryLevel);
+
+	if (batteryStatus == 'C')
+    		copyImageTransparent(1, 3, 2776);
+	else if (batteryLevel > 30)
+		copyImageTransparent(2, 3, 2776);	
+	else if (batteryLevel > 10)
+		copyImageTransparent(3, 3, 2776);	
+	else if (batteryLevel > 5)
+		copyImageTransparent(4, 3, 2776);	
+	else
+		copyImageTransparent(5, 3, 2776);
+
+	char networkStatus = getNetworkStatus();
+
+	if (networkStatus == 'u')
+    		copyImage(6, 2, 2742);
+	else
+    		copyImage(7, 2, 2742);
 
 	wl_surface_attach(srfc, bfr, 0, 0);
 	wl_surface_damage_buffer(srfc, 0, 0, w, h);
@@ -281,7 +395,26 @@ void writeNumber (int number, int barX) {
 			pixl[(((y * w) + (barX + x)) * 4) + 3] = 0xff;
 		}
 	}
-} 
+}
+
+void copyImageTransparent (int sheetX, int sheetY, int barX) {
+	int adjustedSheetX = sheetX * 24;
+	int adjustedSheetY = sheetY * 24;
+	for (int x = 0; x < 24; x++) {
+		for (int y = 0; y < 24; y++) {
+    			int imagesPos = (((adjustedSheetY + y) * BIW) + (adjustedSheetX + x)) * 3;
+    			char inputR = barImages[imagesPos + 0];
+    			char inputG = barImages[imagesPos + 1];
+    			char inputB = barImages[imagesPos + 2];
+    			if (!((inputR == TRANSPARENT_COLOR_R) && (inputG == TRANSPARENT_COLOR_G) && (inputB == TRANSPARENT_COLOR_B))) {
+				pixl[(((y * w) + (barX + x)) * 4) + 0] = inputB;
+				pixl[(((y * w) + (barX + x)) * 4) + 1] = inputG;
+				pixl[(((y * w) + (barX + x)) * 4) + 2] = inputR;
+				pixl[(((y * w) + (barX + x)) * 4) + 3] = 0xff;
+    			}
+		}
+	}
+}
 
 int main() {
 	readGraphics();
