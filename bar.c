@@ -15,9 +15,9 @@
 #define TRANSPARENT_COLOR_G (char) 0x00
 #define TRANSPARENT_COLOR_B (char) 0xff
 
-#define BATTERY_FOREGROUND_R (char) 0x6f
-#define BATTERY_FOREGROUND_G (char) 0x5b
-#define BATTERY_FOREGROUND_B (char) 0x41
+#define BATTERY_FOREGROUND_R (char) 0xa1
+#define BATTERY_FOREGROUND_G (char) 0x81
+#define BATTERY_FOREGROUND_B (char) 0x58
 
 //#define debug
 
