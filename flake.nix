@@ -43,6 +43,7 @@
 							installPhase = ''
 								mkdir -p $out/bin
 								cp runBar $out/bin
+								cp barImageSheet.rgb $out/bin
 							'';
 						};
 			});
