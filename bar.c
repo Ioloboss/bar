@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include "xdg-shell-client-protocol.h"
 
-#define BAR_IMAGE_SHEET_LOCATION "/home/harrison/documents/programs/bar/result/bin/barImageSheet.rgb"
 
 #define TRANSPARENT_COLOR_R (char) 0xf2
 #define TRANSPARENT_COLOR_G (char) 0x00
@@ -18,6 +17,8 @@
 #define BATTERY_FOREGROUND_R (char) 0xa1
 #define BATTERY_FOREGROUND_G (char) 0x81
 #define BATTERY_FOREGROUND_B (char) 0x58
+
+#include "barImageSheet.c"
 
 //#define debug
 
@@ -33,7 +34,6 @@ uint16_t w = 2880 - 16;
 uint16_t h = 24;
 int BIW = 240;
 int BIH = 96;
-char* barImages;
 void copyImage (int sheetX, int sheetY, int barX);
 void writeNumber (int number, int barX);
 void copyImageTransparent (int sheetX, int sheetY, int barX);
@@ -349,24 +349,6 @@ struct wl_registry_listener reg_list = {
 	.global_remove = reg_glob_rem
 };
 
-void readGraphics() {
-	FILE *fp;
-	long lSize;
-	fp = fopen(BAR_IMAGE_SHEET_LOCATION, "rb");
-	if (!fp) perror(BAR_IMAGE_SHEET_LOCATION),exit(1);
-
-	fseek(fp, 0L, SEEK_END);
-	lSize = ftell(fp);
-	rewind(fp);
-
-	barImages = malloc(lSize);
-	if (!barImages) fclose(fp), fputs("memory alloc fails",stderr),exit(1);
-
-	if (1!=fread(barImages, lSize, 1, fp))
-    		fclose(fp),free(barImages),fputs("entire read fails",stderr),exit(1);
-	fclose(fp);
-}
-
 void copyImage (int sheetX, int sheetY, int barX) {
 	int adjustedSheetX = sheetX * 24;
 	int adjustedSheetY = sheetY * 24;
@@ -420,7 +402,6 @@ void copyImageTransparent (int sheetX, int sheetY, int barX) {
 }
 
 int main() {
-	readGraphics();
 	time = malloc(4);
     	struct wl_display* disp = wl_display_connect(0);
     	if (!disp)
@@ -452,7 +433,6 @@ int main() {
 	xdg_surface_destroy(xrfc);
 	wl_surface_destroy(srfc);    	
 	wl_display_disconnect(disp);
-	free(barImages);
 	free(time);
 	return 0;
 }

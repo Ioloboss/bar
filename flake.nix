@@ -16,20 +16,10 @@
 			});
 		in
 		{
-			devShells = forAllSystems ({ pkgs }: {
-				default = pkgs.mkShell {
-					packages = with pkgs; [
-						gcc
-						wayland
-						imagemagick
-					];
-				};
-			});
-
 			packages = forAllSystems ({ pkgs }: {
 				default =
 					let
-						buildInputs = with pkgs; [ gcc wayland imagemagick ];
+						buildInputs = with pkgs; [ gcc wayland imagemagick xxd ];
 					in
 						pkgs.stdenv.mkDerivation {
 							name = "status-bar";
@@ -37,12 +27,16 @@
 							inherit buildInputs;
 							buildPhase = ''
 								convert ./barImageSheet.png ./barImageSheet.rgb
+								xxd -plain barImageSheet.rgb > barImageSheet.cI
+								sed -i ':a;N;$!ba;s/\n//g' barImageSheet.cI
+								cat barImageSheet.cI | sed 's/.\{2\}/&,0x/g;s/,0x$//' > barImageSheet.c
+								echo '};' >> barImageSheet.c
+								sed -i '1s/^/unsigned char barImages[240 * 96 * 3] = {0x/' barImageSheet.c
 								gcc ./bar.c ./xdg-shell-protocol.c -o runBar -lwayland-client
 							'';
 							installPhase = ''
 								mkdir -p $out/bin
 								cp runBar $out/bin
-								cp barImageSheet.rgb $out/bin
 							'';
 						};
 			});
