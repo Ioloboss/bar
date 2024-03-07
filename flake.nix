@@ -19,7 +19,6 @@
 			devShells = forAllSystems ({ pkgs }: {
 				default = pkgs.mkShell {
 					packages = with pkgs; [
-						gnumake
 						gcc
 						wayland
 						imagemagick
